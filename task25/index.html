@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blind Listening Test — TASK-25</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1000px; margin: 0 auto; padding: 24px;
+      background: #fafafa; color: #1a1a1a; line-height: 1.6;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; }
+    .progress-bar {
+      height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin-bottom: 1.5rem;
+    }
+    .progress-fill { height: 100%; background: #2563eb; width: 0%; transition: width 0.2s; }
+    .example-card {
+      background: white; border: 1px solid #e0e0e0; border-radius: 12px;
+      padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .example-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .example-title { font-size: 1.1rem; font-weight: 600; }
+    .example-status { font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; background: #fef3c7; color: #92400e; }
+    .example-status.complete { background: #dcfce7; color: #166534; }
+    .audio-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;
+    }
+    .audio-player {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .audio-label { font-size: 0.85rem; font-weight: 500; color: #374151; }
+    .audio-label.reference { color: #2563eb; }
+    .audio-label.oracle { color: #16a34a; }
+    audio { width: 100%; }
+    .rating-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0;
+    }
+    .rating-group { display: flex; flex-direction: column; gap: 6px; }
+    .rating-group label { font-size: 0.8rem; font-weight: 500; }
+    .rating-buttons { display: flex; gap: 4px; }
+    .rating-btn {
+      flex: 1; padding: 8px 6px; border: 2px solid #e0e0e0; background: white;
+      border-radius: 6px; font-size: 0.85rem; font-weight: 500; cursor: pointer;
+      transition: all 0.15s; min-width: 36px;
+    }
+    .rating-btn:hover { border-color: #2563eb; }
+    .rating-btn.selected { background: #2563eb; border-color: #2563eb; color: white; }
+    .rating-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .closest-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+    .closest-group label { font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 8px; }
+    .closest-select {
+      padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 0.95rem; width: 100%; max-width: 280px; background: white;
+    }
+    .closest-select:focus { outline: none; border-color: #2563eb; }
+    .actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0; flex-wrap: wrap; }
+    .btn {
+      padding: 12px 24px; border-radius: 8px; font-size: 1rem; font-weight: 500;
+      cursor: pointer; border: none; transition: background 0.15s;
+    }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+    .instructions {
+      background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;
+      padding: 16px; margin-bottom: 24px; font-size: 0.95rem;
+    }
+    .instructions strong { display: block; margin-bottom: 8px; }
+    .instructions ul { margin: 0; padding-left: 20px; }
+    .instructions li { margin: 6px 0; }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; padding: 14px 20px;
+      background: #1f2937; color: white; border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;
+      opacity: 0; transform: translateY(20px); transition: all 0.2s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991b1b; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 8px; font-size: 0.85rem; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 12px; height: 12px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Blind Listening Test — TASK-25</h1>
+  <p class="subtitle">Compare 6 model variants (A–F) against original and oracle for 4 music genres.</p>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-color" style="background:#2563eb"></span>Original (reference)</div>
+    <div class="legend-item"><span class="legend-color" style="background:#16a34a"></span>Oracle (ground-truth mel)</div>
+    <div class="legend-item"><span class="legend-color" style="background:#6b7280"></span>Model A–F (blind)</div>
+  </div>
+
+  <div class="instructions">
+    <strong>Instructions:</strong>
+    <ul>
+      <li>Each example = one music genre (rock, jazz, disco, pop).</li>
+      <li>Play <strong>Original</strong> first — this is the reference.</li>
+      <li>Play <strong>Oracle</strong> — ground-truth mel reconstruction (upper bound).</li>
+      <li>Then play clips <strong>A</strong> through <strong>F</strong> (model variants, blinded).</li>
+      <li>Rate each clip <strong>0–4</strong> on how recognizably it matches the Original.</li>
+      <li>Select which clip is <strong>closest to Original</strong> (A–F, or "oracle" / "same").</li>
+      <li>Click <strong>Save & Next</strong> to advance. Progress auto-saves to browser.</li>
+      <li>When done, click <strong>Download CSV</strong> to save your ratings.</li>
+    </ul>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div id="examplesContainer"></div>
+
+  <div class="actions">
+    <button class="btn btn-secondary" id="prevBtn" onclick="navigate(-1)">← Previous</button>
+    <button class="btn btn-primary" id="nextBtn" onclick="navigate(1)">Save & Next →</button>
+    <button class="btn btn-secondary" id="downloadBtn" onclick="downloadCSV()">Download CSV</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+// Task-25 configuration
+const EXAMPLES = [
+  { id: 'r0', genre: 'Rock', original: 'r0_rock.00009_train_pool_pool_18_original.wav', oracle: 'r0_rock.00009_train_pool_pool_18_ground_truth_mel_bigvgan.wav' },
+  { id: 'r1', genre: 'Jazz', original: 'r1_jazz.00027_train_pool_pool_3_original.wav', oracle: 'r1_jazz.00027_train_pool_pool_3_ground_truth_mel_bigvgan.wav' },
+  { id: 'r2', genre: 'Disco', original: 'r2_disco.00090_train_pool_pool_20_original.wav', oracle: 'r2_disco.00090_train_pool_pool_20_ground_truth_mel_bigvgan.wav' },
+  { id: 'r3', genre: 'Pop', original: 'r3_pop.00040_train_pool_pool_9_original.wav', oracle: 'r3_pop.00040_train_pool_pool_9_ground_truth_mel_bigvgan.wav' }
+];
+const MODELS = ['A','B','C','D','E','F'];
+
+let currentIndex = 0;
+let ratings = {};
+
+function audioPath(model, filename) {
+  if (model === 'original' || model === 'oracle') return `audio/${filename}`;
+  return `${model}/${filename}`;
+}
+
+function loadSaved() {
+  const saved = localStorage.getItem('task25Ratings');
+  if (saved) { try { ratings = JSON.parse(saved); } catch {} }
+  const savedIdx = localStorage.getItem('task25Index');
+  if (savedIdx !== null) { currentIndex = parseInt(savedIdx, 10); }
+}
+
+function saveState() {
+  localStorage.setItem('task25Ratings', JSON.stringify(ratings));
+  localStorage.setItem('task25Index', String(currentIndex));
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function renderProgress() {
+  let complete = 0;
+  for (const ex of EXAMPLES) {
+    const r = ratings[ex.id];
+    if (r && MODELS.every(m => typeof r[m] === 'number') && r.closest) complete++;
+  }
+  const pct = (complete / EXAMPLES.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function getModelFilename(ex, model) {
+  const suffix = ex.id === 'r0' ? 'rock.00009_train_pool_pool_18' :
+                 ex.id === 'r1' ? 'jazz.00027_train_pool_pool_3' :
+                 ex.id === 'r2' ? 'disco.00090_train_pool_pool_20' :
+                 'pop.00040_train_pool_pool_9';
+  return `${ex.id}_${suffix}_best_pred_mel_bigvgan.wav`;
+}
+
+function createAudioPlayer(ex, model, label, isReference=false, isOracle=false) {
+  let actualFile;
+  if (model === 'original') actualFile = ex.original;
+  else if (model === 'oracle') actualFile = ex.oracle;
+  else actualFile = getModelFilename(ex, model);
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'audio-player';
+  const labelEl = document.createElement('div');
+  labelEl.className = 'audio-label' + (isReference ? ' reference' : '') + (isOracle ? ' oracle' : '');
+  labelEl.textContent = label;
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.preload = 'metadata';
+  audio.src = audioPath(model, actualFile);
+  wrapper.append(labelEl, audio);
+  return wrapper;
+}
+
+function createRatingButtons(ex, model) {
+  const group = document.createElement('div');
+  group.className = 'rating-group';
+  const label = document.createElement('label');
+  label.textContent = model + ' rating (0–4)';
+  group.appendChild(label);
+  const buttons = document.createElement('div');
+  buttons.className = 'rating-buttons';
+  for (let v=0; v<=4; v++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rating-btn';
+    btn.textContent = v;
+    btn.dataset.value = v;
+    btn.onclick = () => selectRating(ex.id, model, v, btn);
+    if (ratings[ex.id]?.[model] === v) btn.classList.add('selected');
+    buttons.appendChild(btn);
+  }
+  group.appendChild(buttons);
+  return group;
+}
+
+function selectRating(exId, model, value, clickedBtn) {
+  if (!ratings[exId]) ratings[exId] = {};
+  ratings[exId][model] = value;
+  clickedBtn.parentElement.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+  clickedBtn.classList.add('selected');
+  updateExampleStatus(EXAMPLES.find(e => e.id === exId));
+  saveState();
+}
+
+function createClosestSelect(ex) {
+  const group = document.createElement('div');
+  group.className = 'closest-group';
+  const label = document.createElement('label');
+  label.textContent = 'Closest to Original';
+  group.appendChild(label);
+  const select = document.createElement('select');
+  select.className = 'closest-select';
+  const options = [...MODELS, 'oracle', 'same'];
+  options.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o;
+    opt.textContent = o === 'same' ? "Same (can't tell apart)" : (o === 'oracle' ? 'Oracle' : 'Model ' + o);
+    select.appendChild(opt);
+  });
+  if (ratings[ex.id]?.closest) select.value = ratings[ex.id].closest;
+  select.onchange = () => {
+    if (!ratings[ex.id]) ratings[ex.id] = {};
+    ratings[ex.id].closest = select.value;
+    updateExampleStatus(ex);
+    saveState();
+  };
+  group.appendChild(select);
+  return group;
+}
+
+function updateExampleStatus(ex) {
+  const r = ratings[ex.id];
+  const statusEl = document.querySelector(`[data-example="${ex.id}"] .example-status`);
+  if (!statusEl) return;
+  const done = r && MODELS.every(m => typeof r[m] === 'number') && r.closest;
+  statusEl.textContent = done ? 'Complete' : 'Incomplete';
+  statusEl.className = 'example-status' + (done ? ' complete' : '');
+  renderProgress();
+  updateNavButtons();
+}
+
+function updateNavButtons() {
+  const r = ratings[EXAMPLES[currentIndex].id];
+  const canAdvance = r && MODELS.every(m => typeof r[m] === 'number') && r.closest;
+  document.getElementById('nextBtn').disabled = !canAdvance && currentIndex < EXAMPLES.length - 1;
+  document.getElementById('nextBtn').textContent = currentIndex === EXAMPLES.length - 1 ? 'Finish' : 'Save & Next →';
+  document.getElementById('prevBtn').disabled = currentIndex === 0;
+}
+
+function navigate(dir) {
+  const newIdx = currentIndex + dir;
+  if (newIdx < 0 || newIdx >= EXAMPLES.length) return;
+  currentIndex = newIdx;
+  saveState();
+  renderAll();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function renderExample(ex, index) {
+  const card = document.createElement('div');
+  card.className = 'example-card';
+  card.dataset.example = ex.id;
+
+  const header = document.createElement('div');
+  header.className = 'example-header';
+  header.innerHTML = `
+    <span class="example-title">Example ${index+1} / ${EXAMPLES.length}: ${ex.genre} (${ex.id})</span>
+    <span class="example-status" data-example="${ex.id}">Incomplete</span>
+  `;
+  card.appendChild(header);
+
+  const audioRow = document.createElement('div');
+  audioRow.className = 'audio-row';
+  audioRow.appendChild(createAudioPlayer(ex, 'original', 'Original', true));
+  audioRow.appendChild(createAudioPlayer(ex, 'oracle', 'Oracle', false, true));
+  MODELS.forEach(m => audioRow.appendChild(createAudioPlayer(ex, m, 'Model ' + m)));
+  card.appendChild(audioRow);
+
+  const ratingRow = document.createElement('div');
+  ratingRow.className = 'rating-row';
+  MODELS.forEach(m => ratingRow.appendChild(createRatingButtons(ex, m)));
+  card.appendChild(ratingRow);
+
+  card.appendChild(createClosestSelect(ex));
+
+  return card;
+}
+
+function renderAll() {
+  const container = document.getElementById('examplesContainer');
+  container.innerHTML = '';
+  for (let i=0;i<EXAMPLES.length;i++) {
+    container.appendChild(renderExample(EXAMPLES[i], i));
+  }
+  updateExampleStatus(EXAMPLES[currentIndex]);
+  const currentCard = document.querySelector(`[data-example="${EXAMPLES[currentIndex].id}"]`);
+  if (currentCard) currentCard.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function downloadCSV() {
+  let csv = 'example,genre,model,recognizably_same_music_0to4,closest_to_original\n';
+  for (const ex of EXAMPLES) {
+    const r = ratings[ex.id];
+    if (!r) continue;
+    MODELS.forEach(m => {
+      const val = typeof r[m] === 'number' ? r[m] : '';
+      csv += `${ex.id},${ex.genre},${m},${val},\n`;
+    });
+    csv += `${ex.id},${ex.genre},closest_to_original,${r.closest || ''},\n`;
+  }
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'task25_ratings.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV downloaded!', 'success');
+}
+
+// Init
+loadSaved();
+renderAll();
+renderProgress();
+updateNavButtons();
+  </script>
+</body>
+</html>
