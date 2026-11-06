@@ -8,7 +8,7 @@
     * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 1000px; margin: 0 auto; padding: 24px;
+      max-width: 1200px; margin: 0 auto; padding: 24px;
       background: #fafafa; color: #1a1a1a; line-height: 1.6;
     }
     h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
@@ -36,7 +36,7 @@
     .audio-label.oracle { color: #16a34a; }
     audio { width: 100%; }
     .rating-row {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0;
     }
     .rating-group { display: flex; flex-direction: column; gap: 6px; }
     .rating-group label { font-size: 0.8rem; font-weight: 500; }
@@ -236,6 +236,13 @@ function createClosestSelect(ex) {
   group.appendChild(label);
   const select = document.createElement('select');
   select.className = 'closest-select';
+  // Add placeholder option
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select…';
+  placeholder.disabled = true;
+  placeholder.selected = !ratings[ex.id]?.closest;
+  select.appendChild(placeholder);
   const options = [...MODELS, 'oracle', 'same'];
   options.forEach(o => {
     const opt = document.createElement('option');
@@ -258,7 +265,7 @@ function updateExampleStatus(ex) {
   const r = ratings[ex.id];
   const statusEl = document.querySelector(`[data-example="${ex.id}"] .example-status`);
   if (!statusEl) return;
-  const done = r && MODELS.every(m => typeof r[m] === 'number') && r.closest;
+  const done = r && MODELS.every(m => typeof r[m] === 'number') && r.closest && r.closest !== '';
   statusEl.textContent = done ? 'Complete' : 'Incomplete';
   statusEl.className = 'example-status' + (done ? ' complete' : '');
   renderProgress();
