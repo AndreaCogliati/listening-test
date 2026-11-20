@@ -126,7 +126,8 @@
   <div class="actions">
     <button class="btn btn-secondary" id="prevBtn" onclick="navigate(-1)">← Previous</button>
     <button class="btn btn-primary" id="nextBtn" onclick="navigate(1)">Save & Next →</button>
-    <button class="btn btn-secondary" id="downloadBtn" onclick="downloadCSV()">Download CSV</button>
+    <button class="btn btn-secondary" id="downloadRatingsBtn" onclick="downloadRatingsCSV()">Download Ratings CSV</button>
+    <button class="btn btn-secondary" id="downloadPrefsBtn" onclick="downloadPrefsCSV()">Download Preferences CSV</button>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -359,7 +360,7 @@ function renderAll() {
   if (currentCard) currentCard.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
-function downloadCSV() {
+function downloadRatingsCSV() {
   // ratings.csv format
   let csv = 'example,clip,quality_artifacts_1to5,transient_sharpness_1to5,pitch_timbre_fidelity_1to5,notes\n';
   for (let i=0;i<NUM_EXAMPLES;i++) {
@@ -379,7 +380,10 @@ function downloadCSV() {
   a.download = 'task27_ratings.csv';
   a.click();
   URL.revokeObjectURL(url);
+  showToast('Ratings CSV downloaded!', 'success');
+}
 
+function downloadPrefsCSV() {
   // preferences.csv format
   let prefCsv = 'example,preferred_clip_overall\n';
   for (let i=0;i<NUM_EXAMPLES;i++) {
@@ -396,8 +400,7 @@ function downloadCSV() {
   a2.download = 'task27_preferences.csv';
   a2.click();
   URL.revokeObjectURL(prefUrl);
-
-  showToast('CSVs downloaded!', 'success');
+  showToast('Preferences CSV downloaded!', 'success');
 }
 
 // Init
