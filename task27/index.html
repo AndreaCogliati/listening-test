@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blind Listening Test — TASK-27</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px; margin: 0 auto; padding: 24px 16px;
+      background: #fafafa; color: #1a1a1a; line-height: 1.6;
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; }
+    .progress-bar {
+      height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin-bottom: 1.5rem;
+    }
+    .progress-fill { height: 100%; background: #2563eb; width: 0%; transition: width 0.2s; }
+    .example-card {
+      background: white; border: 1px solid #e0e0e0; border-radius: 12px;
+      padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .example-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .example-title { font-size: 1.1rem; font-weight: 600; }
+    .example-status { font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; background: #fef3c7; color: #92400e; }
+    .example-status.complete { background: #dcfce7; color: #166534; }
+    .audio-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px;
+    }
+    .audio-player {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .audio-label { font-size: 0.85rem; font-weight: 500; color: #374151; }
+    .audio-label.reference { color: #2563eb; }
+    .audio-label.oracle { color: #16a34a; }
+    audio { width: 100%; }
+    .rating-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0;
+    }
+    .rating-group { display: flex; flex-direction: column; gap: 6px; }
+    .rating-group label { font-size: 0.75rem; font-weight: 500; color: #6b7280; }
+    .rating-group .dimension-label { font-size: 0.7rem; color: #9ca3af; margin-bottom: 2px; }
+    .rating-buttons { display: flex; gap: 3px; }
+    .rating-btn {
+      flex: 1; padding: 6px 2px; border: 2px solid #e0e0e0; background: white;
+      border-radius: 5px; font-size: 0.75rem; font-weight: 500; cursor: pointer;
+      transition: all 0.15s; min-width: 0;
+    }
+    .rating-btn:hover { border-color: #2563eb; }
+    .rating-btn.selected { background: #2563eb; border-color: #2563eb; color: white; }
+    .rating-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .preference-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+    .preference-group label { font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 8px; }
+    .preference-select {
+      padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 0.95rem; width: 100%; max-width: 280px; background: white;
+    }
+    .preference-select:focus { outline: none; border-color: #2563eb; }
+    .actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f0f0f0; flex-wrap: wrap; }
+    .btn {
+      padding: 12px 24px; border-radius: 8px; font-size: 1rem; font-weight: 500;
+      cursor: pointer; border: none; transition: background 0.15s;
+    }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+    .instructions {
+      background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;
+      padding: 16px; margin-bottom: 24px; font-size: 0.95rem;
+    }
+    .instructions strong { display: block; margin-bottom: 8px; }
+    .instructions ul { margin: 0; padding-left: 20px; }
+    .instructions li { margin: 6px 0; }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; padding: 14px 20px;
+      background: #1f2937; color: white; border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000;
+      opacity: 0; transform: translateY(20px); transition: all 0.2s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991b1b; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #f9fafb; border-radius: 8px; font-size: 0.85rem; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color { width: 12px; height: 12px; border-radius: 3px; }
+    .dimension-info { background: #f3f4f6; border-radius: 6px; padding: 8px 12px; margin-bottom: 16px; font-size: 0.85rem; }
+    .dimension-info code { background: #e5e7eb; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Blind Listening Test — TASK-27</h1>
+  <p class="subtitle">Rate 3 blinded clips per example on 3 dimensions (1–5), then pick preferred clip.</p>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-color" style="background:#2563eb"></span>Original</div>
+    <div class="legend-item"><span class="legend-color" style="background:#16a34a"></span>Ground-truth mel (BigVGAN)</div>
+    <div class="legend-item"><span class="legend-color" style="background:#6b7280"></span>Blind clips 1–3</div>
+  </div>
+
+  <div class="dimension-info">
+    <strong>Rate each clip 1–5 on:</strong>
+    <code>quality_artifacts_1to5</code> (overall quality / absence of artifacts) · 
+    <code>transient_sharpness_1to5</code> (sharpness of attacks/transients) · 
+    <code>pitch_timbre_fidelity_1to5</code> (pitch & timbre fidelity to Original)
+  </div>
+
+  <div class="instructions">
+    <strong>Instructions:</strong>
+    <ul>
+      <li>Play <strong>Original</strong> first — this is the reference.</li>
+      <li>Play <strong>Ground-truth mel</strong> — vocoder upper bound.</li>
+      <li>Then play <strong>Clip 1, 2, 3</strong> (blinded reconstructions).</li>
+      <li>Rate each clip on all <strong>three dimensions (1–5)</strong>.</li>
+      <li>Select <strong>preferred clip overall</strong> (1, 2, 3, or "none").</li>
+      <li>Click <strong>Save & Next</strong> to advance. Progress auto-saves to browser.</li>
+      <li>When done, click <strong>Download CSV</strong> to save your ratings.</li>
+    </ul>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div id="examplesContainer"></div>
+
+  <div class="actions">
+    <button class="btn btn-secondary" id="prevBtn" onclick="navigate(-1)">← Previous</button>
+    <button class="btn btn-primary" id="nextBtn" onclick="navigate(1)">Save & Next →</button>
+    <button class="btn btn-secondary" id="downloadBtn" onclick="downloadCSV()">Download CSV</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+// Task-27 configuration
+const NUM_EXAMPLES = 16;
+const CLIPS = ['clip_1', 'clip_2', 'clip_3'];
+const DIMENSIONS = [
+  { key: 'quality_artifacts_1to5', label: 'Quality / Artifacts' },
+  { key: 'transient_sharpness_1to5', label: 'Transient Sharpness' },
+  { key: 'pitch_timbre_fidelity_1to5', label: 'Pitch/Timbre Fidelity' }
+];
+
+let currentIndex = 0;
+let ratings = {}; // { example_01: { clip_1: { quality: 4, transient: 3, pitch: 5 }, clip_2: {...}, preferred: 'clip_2' }, ... }
+
+function exampleId(i) {
+  return `example_${String(i+1).padStart(2,'0')}`;
+}
+
+function audioPath(ex, clip) {
+  return `${ex}/${clip}.wav`;
+}
+
+function loadSaved() {
+  const saved = localStorage.getItem('task27Ratings');
+  if (saved) { try { ratings = JSON.parse(saved); } catch {} }
+  const savedIdx = localStorage.getItem('task27Index');
+  if (savedIdx !== null) { currentIndex = parseInt(savedIdx, 10); }
+}
+
+function saveState() {
+  localStorage.setItem('task27Ratings', JSON.stringify(ratings));
+  localStorage.setItem('task27Index', String(currentIndex));
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function renderProgress() {
+  let complete = 0;
+  for (let i=0;i<NUM_EXAMPLES;i++) {
+    const ex = exampleId(i);
+    const r = ratings[ex];
+    if (r) {
+      let done = true;
+      for (const c of CLIPS) {
+        if (!r[c] || DIMENSIONS.some(d => typeof r[c][d.key] !== 'number')) { done = false; break; }
+      }
+      if (!r.preferred) done = false;
+      if (done) complete++;
+    }
+  }
+  const pct = (complete / NUM_EXAMPLES) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function createAudioPlayer(ex, clip, label, isReference=false, isOracle=false) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'audio-player';
+  const labelEl = document.createElement('div');
+  labelEl.className = 'audio-label' + (isReference ? ' reference' : '') + (isOracle ? ' oracle' : '');
+  labelEl.textContent = label;
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.preload = 'metadata';
+  audio.src = audioPath(ex, clip);
+  wrapper.append(labelEl, audio);
+  return wrapper;
+}
+
+function createRatingButtons(ex, clip, dimension) {
+  const group = document.createElement('div');
+  group.className = 'rating-group';
+  const label = document.createElement('label');
+  label.textContent = clip.replace('_', ' ') + ' — ' + dimension.label;
+  group.appendChild(label);
+  const dimLabel = document.createElement('div');
+  dimLabel.className = 'dimension-label';
+  dimLabel.textContent = dimension.key;
+  group.appendChild(dimLabel);
+  const buttons = document.createElement('div');
+  buttons.className = 'rating-buttons';
+  for (let v=1; v<=5; v++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rating-btn';
+    btn.textContent = v;
+    btn.dataset.value = v;
+    btn.onclick = () => selectRating(ex, clip, dimension.key, v, btn);
+    if (ratings[ex]?.[clip]?.[dimension.key] === v) btn.classList.add('selected');
+    buttons.appendChild(btn);
+  }
+  group.appendChild(buttons);
+  return group;
+}
+
+function selectRating(ex, clip, dimKey, value, clickedBtn) {
+  if (!ratings[ex]) ratings[ex] = {};
+  if (!ratings[ex][clip]) ratings[ex][clip] = {};
+  ratings[ex][clip][dimKey] = value;
+  clickedBtn.parentElement.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+  clickedBtn.classList.add('selected');
+  updateExampleStatus(ex);
+  saveState();
+}
+
+function createPreferenceSelect(ex) {
+  const group = document.createElement('div');
+  group.className = 'preference-group';
+  const label = document.createElement('label');
+  label.textContent = 'Preferred clip overall';
+  group.appendChild(label);
+  const select = document.createElement('select');
+  select.className = 'preference-select';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select…';
+  placeholder.disabled = true;
+  placeholder.selected = !ratings[ex]?.preferred;
+  select.appendChild(placeholder);
+  const options = [...CLIPS, 'none'];
+  options.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o;
+    opt.textContent = o === 'none' ? 'None (no preference)' : o.replace('_', ' ');
+    select.appendChild(opt);
+  });
+  if (ratings[ex]?.preferred) select.value = ratings[ex].preferred;
+  select.onchange = () => {
+    if (!ratings[ex]) ratings[ex] = {};
+    ratings[ex].preferred = select.value;
+    updateExampleStatus(ex);
+    saveState();
+  };
+  group.appendChild(select);
+  return group;
+}
+
+function updateExampleStatus(ex) {
+  const r = ratings[ex];
+  const statusEl = document.querySelector(`[data-example="${ex}"] .example-status`);
+  if (!statusEl) return;
+  let done = false;
+  if (r) {
+    done = true;
+    for (const c of CLIPS) {
+      if (!r[c] || DIMENSIONS.some(d => typeof r[c][d.key] !== 'number')) { done = false; break; }
+    }
+    if (!r.preferred || r.preferred === '') done = false;
+  }
+  statusEl.textContent = done ? 'Complete' : 'Incomplete';
+  statusEl.className = 'example-status' + (done ? ' complete' : '');
+  renderProgress();
+  updateNavButtons();
+}
+
+function updateNavButtons() {
+  const r = ratings[exampleId(currentIndex)];
+  let canAdvance = false;
+  if (r) {
+    canAdvance = true;
+    for (const c of CLIPS) {
+      if (!r[c] || DIMENSIONS.some(d => typeof r[c][d.key] !== 'number')) { canAdvance = false; break; }
+    }
+    if (!r.preferred || r.preferred === '') canAdvance = false;
+  }
+  document.getElementById('nextBtn').disabled = !canAdvance && currentIndex < NUM_EXAMPLES - 1;
+  document.getElementById('nextBtn').textContent = currentIndex === NUM_EXAMPLES - 1 ? 'Finish' : 'Save & Next →';
+  document.getElementById('prevBtn').disabled = currentIndex === 0;
+}
+
+function navigate(dir) {
+  const newIdx = currentIndex + dir;
+  if (newIdx < 0 || newIdx >= NUM_EXAMPLES) return;
+  currentIndex = newIdx;
+  saveState();
+  renderAll();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function renderExample(ex, index) {
+  const card = document.createElement('div');
+  card.className = 'example-card';
+  card.dataset.example = ex;
+
+  const header = document.createElement('div');
+  header.className = 'example-header';
+  const type = index < 8 ? 'Training' : 'Monitoring';
+  header.innerHTML = `
+    <span class="example-title">Example ${index+1} / ${NUM_EXAMPLES} (${type})</span>
+    <span class="example-status" data-example="${ex}">Incomplete</span>
+  `;
+  card.appendChild(header);
+
+  const audioRow = document.createElement('div');
+  audioRow.className = 'audio-row';
+  audioRow.appendChild(createAudioPlayer(ex, 'reference_original', 'Original', true));
+  audioRow.appendChild(createAudioPlayer(ex, 'reference_ground_truth_mel_bigvgan', 'Ground-truth mel', false, true));
+  CLIPS.forEach(c => audioRow.appendChild(createAudioPlayer(ex, c, c.replace('_', ' '))));
+  card.appendChild(audioRow);
+
+  const ratingRow = document.createElement('div');
+  ratingRow.className = 'rating-row';
+  CLIPS.forEach(c => {
+    DIMENSIONS.forEach(d => ratingRow.appendChild(createRatingButtons(ex, c, d)));
+  });
+  card.appendChild(ratingRow);
+
+  card.appendChild(createPreferenceSelect(ex));
+
+  return card;
+}
+
+function renderAll() {
+  const container = document.getElementById('examplesContainer');
+  container.innerHTML = '';
+  for (let i=0;i<NUM_EXAMPLES;i++) {
+    container.appendChild(renderExample(exampleId(i), i));
+  }
+  updateExampleStatus(exampleId(currentIndex));
+  const currentCard = document.querySelector(`[data-example="${exampleId(currentIndex)}"]`);
+  if (currentCard) currentCard.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function downloadCSV() {
+  // ratings.csv format
+  let csv = 'example,clip,quality_artifacts_1to5,transient_sharpness_1to5,pitch_timbre_fidelity_1to5,notes\n';
+  for (let i=0;i<NUM_EXAMPLES;i++) {
+    const ex = exampleId(i);
+    const r = ratings[ex];
+    if (!r) continue;
+    CLIPS.forEach(c => {
+      if (r[c]) {
+        csv += `${ex},${c},${r[c].quality_artifacts_1to5 || ''},${r[c].transient_sharpness_1to5 || ''},${r[c].pitch_timbre_fidelity_1to5 || ''},\n`;
+      }
+    });
+  }
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'task27_ratings.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // preferences.csv format
+  let prefCsv = 'example,preferred_clip_overall\n';
+  for (let i=0;i<NUM_EXAMPLES;i++) {
+    const ex = exampleId(i);
+    const r = ratings[ex];
+    if (r?.preferred) {
+      prefCsv += `${ex},${r.preferred}\n`;
+    }
+  }
+  const prefBlob = new Blob([prefCsv], {type: 'text/csv'});
+  const prefUrl = URL.createObjectURL(prefBlob);
+  const a2 = document.createElement('a');
+  a2.href = prefUrl;
+  a2.download = 'task27_preferences.csv';
+  a2.click();
+  URL.revokeObjectURL(prefUrl);
+
+  showToast('CSVs downloaded!', 'success');
+}
+
+// Init
+loadSaved();
+renderAll();
+renderProgress();
+updateNavButtons();
+  </script>
+</body>
+</html>
