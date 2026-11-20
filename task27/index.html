@@ -124,8 +124,7 @@
   <div id="examplesContainer"></div>
 
   <div class="actions">
-    <button class="btn btn-secondary" id="prevBtn" onclick="navigate(-1)">← Previous</button>
-    <button class="btn btn-primary" id="nextBtn" onclick="navigate(1)">Save & Next →</button>
+    <button class="btn btn-secondary" id="clearBtn" onclick="clearAll()">Clear All Ratings</button>
     <button class="btn btn-secondary" id="downloadRatingsBtn" onclick="downloadRatingsCSV()">Download Ratings CSV</button>
     <button class="btn btn-secondary" id="downloadPrefsBtn" onclick="downloadPrefsCSV()">Download Preferences CSV</button>
   </div>
@@ -288,31 +287,16 @@ function updateExampleStatus(ex) {
   statusEl.textContent = done ? 'Complete' : 'Incomplete';
   statusEl.className = 'example-status' + (done ? ' complete' : '');
   renderProgress();
-  updateNavButtons();
 }
 
-function updateNavButtons() {
-  const r = ratings[exampleId(currentIndex)];
-  let canAdvance = false;
-  if (r) {
-    canAdvance = true;
-    for (const c of CLIPS) {
-      if (!r[c] || DIMENSIONS.some(d => typeof r[c][d.key] !== 'number')) { canAdvance = false; break; }
-    }
-    if (!r.preferred || r.preferred === '') canAdvance = false;
-  }
-  document.getElementById('nextBtn').disabled = !canAdvance && currentIndex < NUM_EXAMPLES - 1;
-  document.getElementById('nextBtn').textContent = currentIndex === NUM_EXAMPLES - 1 ? 'Finish' : 'Save & Next →';
-  document.getElementById('prevBtn').disabled = currentIndex === 0;
-}
-
-function navigate(dir) {
-  const newIdx = currentIndex + dir;
-  if (newIdx < 0 || newIdx >= NUM_EXAMPLES) return;
-  currentIndex = newIdx;
-  saveState();
+function clearAll() {
+  if (!confirm('Clear all ratings? This cannot be undone.')) return;
+  ratings = {};
+  localStorage.removeItem('task27Ratings');
+  localStorage.removeItem('task27Index');
+  currentIndex = 0;
   renderAll();
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  showToast('All ratings cleared', 'success');
 }
 
 function renderExample(ex, index) {
@@ -356,8 +340,6 @@ function renderAll() {
     container.appendChild(renderExample(exampleId(i), i));
   }
   updateExampleStatus(exampleId(currentIndex));
-  const currentCard = document.querySelector(`[data-example="${exampleId(currentIndex)}"]`);
-  if (currentCard) currentCard.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 function downloadRatingsCSV() {
