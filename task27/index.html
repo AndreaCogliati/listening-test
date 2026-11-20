@@ -28,6 +28,9 @@
     .audio-row {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px;
     }
+    .clip-column {
+      display: flex; flex-direction: column; gap: 12px;
+    }
     .audio-player {
       display: flex; flex-direction: column; gap: 8px;
     }
@@ -35,12 +38,9 @@
     .audio-label.reference { color: #2563eb; }
     .audio-label.oracle { color: #16a34a; }
     audio { width: 100%; }
-    .rating-row {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0;
-    }
-    .rating-group { display: flex; flex-direction: column; gap: 6px; }
-    .rating-group label { font-size: 0.75rem; font-weight: 500; color: #6b7280; }
-    .rating-group .dimension-label { font-size: 0.7rem; color: #9ca3af; margin-bottom: 2px; }
+    .rating-group { display: flex; flex-direction: column; gap: 4px; }
+    .rating-group label { font-size: 0.7rem; font-weight: 500; color: #6b7280; }
+    .rating-group .dimension-label { font-size: 0.65rem; color: #9ca3af; margin-bottom: 2px; }
     .rating-buttons { display: flex; gap: 3px; }
     .rating-btn {
       flex: 1; padding: 6px 2px; border: 2px solid #e0e0e0; background: white;
@@ -330,17 +330,18 @@ function renderExample(ex, index) {
 
   const audioRow = document.createElement('div');
   audioRow.className = 'audio-row';
+  // Reference players don't need columns
   audioRow.appendChild(createAudioPlayer(ex, 'reference_original', 'Original', true));
   audioRow.appendChild(createAudioPlayer(ex, 'reference_ground_truth_mel_bigvgan', 'Ground-truth mel', false, true));
-  CLIPS.forEach(c => audioRow.appendChild(createAudioPlayer(ex, c, c.replace('_', ' '))));
-  card.appendChild(audioRow);
-
-  const ratingRow = document.createElement('div');
-  ratingRow.className = 'rating-row';
+  // Clip columns: each has audio player + rating buttons
   CLIPS.forEach(c => {
-    DIMENSIONS.forEach(d => ratingRow.appendChild(createRatingButtons(ex, c, d)));
+    const col = document.createElement('div');
+    col.className = 'clip-column';
+    col.appendChild(createAudioPlayer(ex, c, c.replace('_', ' ')));
+    DIMENSIONS.forEach(d => col.appendChild(createRatingButtons(ex, c, d)));
+    audioRow.appendChild(col);
   });
-  card.appendChild(ratingRow);
+  card.appendChild(audioRow);
 
   card.appendChild(createPreferenceSelect(ex));
 
